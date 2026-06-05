@@ -345,6 +345,9 @@ app.get('/api/history/wines', (_req, res) => {
     SELECT w.id, w.name, w.category,
       COUNT(r.id) AS votes,
       COUNT(DISTINCT r.event_id) AS events_count,
+      ROUND(AVG(r.name_score), 2) AS avg_name,
+      ROUND(AVG(r.label_score), 2) AS avg_label,
+      ROUND(AVG(r.taste_score), 2) AS avg_taste,
       ROUND(AVG(r.name_score + r.label_score + r.taste_score), 2) AS avg_total
     FROM wines w
     LEFT JOIN rankings r ON r.wine_id = w.id

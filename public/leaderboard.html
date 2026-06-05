@@ -9,7 +9,7 @@
 </head>
 <body>
 <header class="app-header">
-  <h1>🍷 Mother's Day Winers</h1>
+  <h1><a href="/">🍷 Mother's Day Winers</a></h1>
   <nav>
     <a href="/">Rank</a>
     <a href="/leaderboard.html" class="active">Leaderboard</a>
@@ -55,11 +55,13 @@ function renderTable(rows, includeEvents) {
   if (!rows.length) return '<p class="small">No data yet.</p>';
   const head = `
     <tr>
-      <th>#</th><th>Wine</th><th>Category</th>
-      ${includeEvents ? '<th class="num">Events</th>' : ''}
+      <th>Rank</th><th>Wine</th><th>Category</th>
+      ${includeEvents ? '<th class="num">Years</th>' : ''}
       <th class="num">Votes</th>
-      ${!includeEvents ? '<th class="num">Name</th><th class="num">Label</th><th class="num">Taste</th>' : ''}
-      <th class="num">Total /15</th>
+      <th class="num">Avg Name</th>
+      <th class="num">Avg Label</th>
+      <th class="num">Avg Taste</th>
+      <th class="num">Avg Total /15</th>
     </tr>`;
   const body = rows.map((r, i) => `
     <tr class="${r.category === 'white_rose' ? 'rose' : ''}">
@@ -68,10 +70,9 @@ function renderTable(rows, includeEvents) {
       <td>${r.category === 'white_rose' ? 'White/Rosé' : 'Red'}</td>
       ${includeEvents ? `<td class="num">${r.events_count || 0}</td>` : ''}
       <td class="num">${r.votes || 0}</td>
-      ${!includeEvents ? `
-        <td class="num">${r.avg_name ?? '—'}</td>
-        <td class="num">${r.avg_label ?? '—'}</td>
-        <td class="num">${r.avg_taste ?? '—'}</td>` : ''}
+      <td class="num">${r.avg_name ?? '—'}</td>
+      <td class="num">${r.avg_label ?? '—'}</td>
+      <td class="num">${r.avg_taste ?? '—'}</td>
       <td class="num"><strong>${r.avg_total ?? '—'}</strong></td>
     </tr>`).join('');
   return `<table>${head}${body}</table>`;
