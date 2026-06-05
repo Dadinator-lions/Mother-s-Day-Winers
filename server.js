@@ -203,6 +203,20 @@ app.post('/api/events', (req, res) => {
   }
 });
 
+app.patch('/api/events/:id', (req, res) => {
+  const { event_date } = req.body || {};
+  if (!event_date || !/^\d{4}-\d{2}-\d{2}$/.test(event_date)) {
+    return res.status(400).json({ error: 'event_date must be YYYY-MM-DD' });
+  }
+  try {
+    db.prepare('UPDATE events SET event_date = ? WHERE id = ?').run(event_date, req.params.id);
+    res.json({ id: +req.params.id, event_date });
+  } catch (e) {
+    if (String(e).includes('UNIQUE')) return res.status(409).json({ error: 'event date already exists' });
+    res.status(500).json({ error: String(e) });
+  }
+});
+
 app.delete('/api/events/:id', (req, res) => {
   db.prepare('DELETE FROM events WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
@@ -210,6 +224,22 @@ app.delete('/api/events/:id', (req, res) => {
 
 app.get('/api/participants', (_req, res) => {
   res.json(db.prepare('SELECT id, name FROM participants ORDER BY name').all());
+});
+
+app.get('/api/events/:id/participants/all', (req, res) => {
+  res.json(db.prepare(`
+    SELECT p.id, p.name,
+      CASE WHEN ep.participant_id IS NULL THEN 0 ELSE 1 END AS included
+    FROM participants p
+    LEFT JOIN event_participants ep ON ep.participant_id = p.id AND ep.event_id = ?
+    ORDER BY p.name
+  `).all(req.params.id));
+});
+
+app.post('/api/events/:id/participants/:participantId', (req, res) => {
+  db.prepare('INSERT OR IGNORE INTO event_participants (event_id, participant_id) VALUES (?, ?)')
+    .run(req.params.id, req.params.participantId);
+  res.json({ ok: true });
 });
 
 app.get('/api/events/:id/participants', (req, res) => {
