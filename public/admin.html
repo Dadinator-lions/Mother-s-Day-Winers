@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin · Mother's Day Winers</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<header class="app-header">
+  <h1>🍷 Mother's Day Winers</h1>
+  <nav>
+    <a href="/">Rank</a>
+    <a href="/leaderboard.html">Leaderboard</a>
+    <a href="/admin.html" class="active">Admin</a>
+    <a href="#" id="logout">Logout</a>
+  </nav>
+</header>
+
+<main class="container">
+  <div class="card">
+    <h2>Create event</h2>
+    <form id="event-form" class="row">
+      <input type="date" id="event-date" required />
+      <button type="submit">Add event</button>
+    </form>
+    <p class="small">Existing events:</p>
+    <ul id="event-list" class="simple-list"></ul>
+  </div>
+
+  <div class="card">
+    <h2>Participants for event</h2>
+    <div class="row">
+      <label>Event:
+        <select id="event-select"></select>
+      </label>
+    </div>
+    <form id="participant-form" class="row" style="margin-top: 0.5rem;">
+      <input type="text" id="participant-name" placeholder="Add participant name" required />
+      <button type="submit">Add</button>
+    </form>
+    <ul id="participant-list" class="simple-list"></ul>
+  </div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+$('#logout').addEventListener('click', async (e) => {
+  e.preventDefault();
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = '/login';
+});
+
+const eventList = $('#event-list');
+const eventSel = $('#event-select');
+const partList = $('#participant-list');
+
+async function loadEvents() {
+  const events = await (await fetch('/api/events')).json();
+  eventList.innerHTML = events.length
+    ? events.map(e => `<li><span>${e.event_date}</span><button class="ghost del-event" data-id="${e.id}">Delete</button></li>`).join('')
+    : '<li class="small">No events yet.</li>';
+  eventSel.innerHTML = events.length
+    ? events.map(e => `<option value="${e.id}">${e.event_date}</option>`).join('')
+    : '<option value="">Create an event first</option>';
+  eventList.querySelectorAll('.del-event').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('Delete this event and all its rankings?')) return;
+    await fetch(`/api/events/${b.dataset.id}`, { method: 'DELETE' });
+    await loadEvents();
+    await loadParticipants();
+  }));
+  await loadParticipants();
+}
+
+async function loadParticipants() {
+  partList.innerHTML = '';
+  if (!eventSel.value) return;
+  const ps = await (await fetch(`/api/events/${eventSel.value}/participants`)).json();
+  partList.innerHTML = ps.length
+    ? ps.map(p => `<li><span>${p.name}</span><button class="ghost del-p" data-id="${p.id}">Remove</button></li>`).join('')
+    : '<li class="small">No participants yet.</li>';
+  partList.querySelectorAll('.del-p').forEach(b => b.addEventListener('click', async () => {
+    await fetch(`/api/events/${eventSel.value}/participants/${b.dataset.id}`, { method: 'DELETE' });
+    await loadParticipants();
+  }));
+}
+
+$('#event-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const event_date = $('#event-date').value;
+  await fetch('/api/events', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ event_date }),
+  });
+  $('#event-date').value = '';
+  await loadEvents();
+});
+
+$('#participant-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!eventSel.value) return;
+  const name = $('#participant-name').value.trim();
+  if (!name) return;
+  await fetch(`/api/events/${eventSel.value}/participants`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  $('#participant-name').value = '';
+  await loadParticipants();
+});
+
+eventSel.addEventListener('change', loadParticipants);
+
+loadEvents();
+</script>
+</body>
+</html>

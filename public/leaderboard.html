@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Leaderboard · Mother's Day Winers</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<header class="app-header">
+  <h1>🍷 Mother's Day Winers</h1>
+  <nav>
+    <a href="/">Rank</a>
+    <a href="/leaderboard.html" class="active">Leaderboard</a>
+    <a href="/admin.html">Admin</a>
+    <a href="#" id="logout">Logout</a>
+  </nav>
+</header>
+
+<main class="container">
+  <div class="card">
+    <h2>This Event</h2>
+    <div class="row">
+      <label>Event:
+        <select id="event-select"></select>
+      </label>
+      <button id="refresh" class="ghost">Refresh</button>
+      <span class="small" id="status"></span>
+    </div>
+    <div id="leaderboard"></div>
+  </div>
+
+  <div class="card">
+    <h2>All-Time (across every year)</h2>
+    <div id="history"></div>
+  </div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+$('#logout').addEventListener('click', async (e) => {
+  e.preventDefault();
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = '/login';
+});
+
+const eventSel = $('#event-select');
+const lbDiv = $('#leaderboard');
+const histDiv = $('#history');
+const status = $('#status');
+let refreshTimer = null;
+
+function renderTable(rows, includeEvents) {
+  if (!rows.length) return '<p class="small">No data yet.</p>';
+  const head = `
+    <tr>
+      <th>#</th><th>Wine</th><th>Category</th>
+      ${includeEvents ? '<th class="num">Events</th>' : ''}
+      <th class="num">Votes</th>
+      ${!includeEvents ? '<th class="num">Name</th><th class="num">Label</th><th class="num">Taste</th>' : ''}
+      <th class="num">Total /15</th>
+    </tr>`;
+  const body = rows.map((r, i) => `
+    <tr class="${r.category === 'white_rose' ? 'rose' : ''}">
+      <td>${i + 1}</td>
+      <td>${r.name}</td>
+      <td>${r.category === 'white_rose' ? 'White/Rosé' : 'Red'}</td>
+      ${includeEvents ? `<td class="num">${r.events_count || 0}</td>` : ''}
+      <td class="num">${r.votes || 0}</td>
+      ${!includeEvents ? `
+        <td class="num">${r.avg_name ?? '—'}</td>
+        <td class="num">${r.avg_label ?? '—'}</td>
+        <td class="num">${r.avg_taste ?? '—'}</td>` : ''}
+      <td class="num"><strong>${r.avg_total ?? '—'}</strong></td>
+    </tr>`).join('');
+  return `<table>${head}${body}</table>`;
+}
+
+async function loadEvents() {
+  const events = await (await fetch('/api/events')).json();
+  eventSel.innerHTML = events.length
+    ? events.map(e => `<option value="${e.id}">${e.event_date}</option>`).join('')
+    : '<option value="">No events yet</option>';
+  if (events.length) await loadLeaderboard();
+}
+
+async function loadLeaderboard() {
+  if (!eventSel.value) { lbDiv.innerHTML = ''; return; }
+  const rows = await (await fetch(`/api/events/${eventSel.value}/leaderboard`)).json();
+  lbDiv.innerHTML = renderTable(rows, false);
+  status.textContent = 'Updated ' + new Date().toLocaleTimeString();
+}
+
+async function loadHistory() {
+  const rows = await (await fetch('/api/history/wines')).json();
+  histDiv.innerHTML = renderTable(rows, true);
+}
+
+eventSel.addEventListener('change', loadLeaderboard);
+$('#refresh').addEventListener('click', () => { loadLeaderboard(); loadHistory(); });
+
+(async () => {
+  await loadEvents();
+  await loadHistory();
+  refreshTimer = setInterval(loadLeaderboard, 10000);
+})();
+</script>
+</body>
+</html>

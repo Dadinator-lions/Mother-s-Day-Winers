@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mother's Day Winers</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <h1>🍷 Mother's Day Winers</h1>
+    <p>Enter the password to continue.</p>
+    <form id="login-form">
+      <input type="password" id="password" placeholder="Password" autocomplete="current-password" required />
+      <button type="submit">Enter</button>
+      <p id="error" class="error"></p>
+    </form>
+  </main>
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('password').value;
+      const err = document.getElementById('error');
+      err.textContent = '';
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) window.location.href = '/';
+      else err.textContent = 'Wrong password.';
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rank Wines · Mother's Day Winers</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<header class="app-header">
+  <h1>🍷 Mother's Day Winers</h1>
+  <nav>
+    <a href="/" class="active">Rank</a>
+    <a href="/leaderboard.html">Leaderboard</a>
+    <a href="/admin.html">Admin</a>
+    <a href="#" id="logout">Logout</a>
+  </nav>
+</header>
+
+<main class="container">
+  <div class="card">
+    <h2>Pick your event and name</h2>
+    <div class="row">
+      <label>Event:
+        <select id="event-select"></select>
+      </label>
+      <label>You:
+        <select id="participant-select"></select>
+      </label>
+    </div>
+    <p class="small" id="status">Select an event and your name to begin.</p>
+  </div>
+
+  <div id="wines"></div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const eventSel = $('#event-select');
+const partSel = $('#participant-select');
+const winesDiv = $('#wines');
+const status = $('#status');
+
+$('#logout').addEventListener('click', async (e) => {
+  e.preventDefault();
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = '/login';
+});
+
+let wines = [];
+let myRankings = {};
+
+async function loadEvents() {
+  const events = await (await fetch('/api/events')).json();
+  eventSel.innerHTML = '<option value="">— select event —</option>' +
+    events.map(e => `<option value="${e.id}">${e.event_date}</option>`).join('');
+  if (events.length) { eventSel.value = events[0].id; await loadParticipants(); }
+}
+
+async function loadParticipants() {
+  partSel.innerHTML = '<option value="">— select your name —</option>';
+  if (!eventSel.value) return;
+  const ps = await (await fetch(`/api/events/${eventSel.value}/participants`)).json();
+  partSel.innerHTML += ps.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+}
+
+async function loadWines() {
+  wines = await (await fetch('/api/wines')).json();
+}
+
+async function loadMyRankings() {
+  myRankings = {};
+  if (!eventSel.value || !partSel.value) { renderWines(); return; }
+  const rows = await (await fetch(`/api/events/${eventSel.value}/rankings/${partSel.value}`)).json();
+  for (const r of rows) myRankings[r.wine_id] = r;
+  renderWines();
+}
+
+function starRow(wineId, key, value) {
+  const stars = [1,2,3,4,5].map(n => `<span class="star ${n <= value ? 'filled' : ''}" data-wine="${wineId}" data-key="${key}" data-val="${n}">★</span>`).join('');
+  return `<div class="stars">${stars}</div>`;
+}
+
+function renderWines() {
+  if (!eventSel.value || !partSel.value) {
+    winesDiv.innerHTML = '';
+    status.textContent = 'Select an event and your name to begin.';
+    return;
+  }
+  status.textContent = 'Tap a star to score. Saves automatically.';
+  const groups = { white_rose: [], red: [] };
+  for (const w of wines) groups[w.category].push(w);
+  const section = (title, list) => `
+    <div class="card">
+      <h2>${title}</h2>
+      ${list.map(w => {
+        const r = myRankings[w.id] || { name_score: 0, label_score: 0, taste_score: 0 };
+        return `
+          <div class="wine">
+            <h3>${w.name}</h3>
+            <div class="score-row"><label>Name</label>${starRow(w.id, 'name_score', r.name_score)}</div>
+            <div class="score-row"><label>Label</label>${starRow(w.id, 'label_score', r.label_score)}</div>
+            <div class="score-row"><label>Taste</label>${starRow(w.id, 'taste_score', r.taste_score)}</div>
+          </div>`;
+      }).join('')}
+    </div>`;
+  winesDiv.innerHTML = section('Whites & Rosés', groups.white_rose) + section('Reds', groups.red);
+  winesDiv.querySelectorAll('.star').forEach(el => el.addEventListener('click', onStar));
+}
+
+async function onStar(e) {
+  const t = e.currentTarget;
+  const wineId = +t.dataset.wine;
+  const key = t.dataset.key;
+  const val = +t.dataset.val;
+  const cur = myRankings[wineId] || { name_score: 0, label_score: 0, taste_score: 0 };
+  cur[key] = val;
+  myRankings[wineId] = cur;
+  // Optimistic re-render of this wine's stars
+  renderWines();
+  if (cur.name_score && cur.label_score && cur.taste_score) {
+    await fetch(`/api/events/${eventSel.value}/rankings/${partSel.value}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        wine_id: wineId,
+        name_score: cur.name_score,
+        label_score: cur.label_score,
+        taste_score: cur.taste_score,
+      }),
+    });
+    status.textContent = 'Saved ✓';
+  } else {
+    status.textContent = 'Score Name, Label, and Taste (1–5) to save.';
+  }
+}
+
+eventSel.addEventListener('change', async () => { await loadParticipants(); await loadMyRankings(); });
+partSel.addEventListener('change', loadMyRankings);
+
+(async () => { await loadWines(); await loadEvents(); await loadMyRankings(); })();
+</script>
+</body>
+</html>
