@@ -175,12 +175,20 @@ async function loadParticipants() {
             <input type="checkbox" class="p-toggle" data-id="${p.id}" ${p.included ? 'checked' : ''} />
             <span>${p.name}</span>
           </label>
-          <button class="ghost edit-p" data-id="${p.id}" data-name="${p.name.replace(/"/g, '&quot;')}">Edit</button>
+          <span>
+            <button class="ghost edit-p" data-id="${p.id}" data-name="${p.name.replace(/"/g, '&quot;')}">Edit</button>
+            <button class="danger del-p" data-id="${p.id}" data-name="${p.name.replace(/"/g, '&quot;')}">Delete</button>
+          </span>
         </li>`).join('')}
     </ul>`;
   partList.querySelectorAll('.p-toggle').forEach(cb => cb.addEventListener('change', async () => {
     const url = `/api/events/${id}/participants/${cb.dataset.id}`;
     await fetch(url, { method: cb.checked ? 'POST' : 'DELETE' });
+  }));
+  partList.querySelectorAll('.del-p').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm(`Delete "${b.dataset.name}" entirely? This removes them from EVERY event and deletes all their rankings.`)) return;
+    await fetch(`/api/participants/${b.dataset.id}`, { method: 'DELETE' });
+    await loadParticipants();
   }));
   partList.querySelectorAll('.edit-p').forEach(b => b.addEventListener('click', async () => {
     const next = prompt('Edit name:', b.dataset.name);
@@ -212,13 +220,21 @@ async function loadWines() {
             <input type="checkbox" class="w-toggle" data-id="${w.id}" ${w.included ? 'checked' : ''} />
             <span>${w.name}</span>
           </label>
-          <button class="ghost edit-w" data-id="${w.id}" data-name="${w.name.replace(/"/g, '&quot;')}" data-category="${w.category}">Edit</button>
+          <span>
+            <button class="ghost edit-w" data-id="${w.id}" data-name="${w.name.replace(/"/g, '&quot;')}" data-category="${w.category}">Edit</button>
+            <button class="danger del-w" data-id="${w.id}" data-name="${w.name.replace(/"/g, '&quot;')}">Delete</button>
+          </span>
         </li>`).join('')}
     </ul>`;
   wineList.innerHTML = section('Whites & Rosés', groups.white_rose) + section('Reds', groups.red);
   wineList.querySelectorAll('.w-toggle').forEach(cb => cb.addEventListener('change', async () => {
     const url = `/api/events/${id}/wines/${cb.dataset.id}`;
     await fetch(url, { method: cb.checked ? 'POST' : 'DELETE' });
+  }));
+  wineList.querySelectorAll('.del-w').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm(`Delete "${b.dataset.name}" entirely? This removes it from EVERY event and deletes all its rankings.`)) return;
+    await fetch(`/api/wines/${b.dataset.id}`, { method: 'DELETE' });
+    await loadWines();
   }));
   wineList.querySelectorAll('.edit-w').forEach(b => b.addEventListener('click', async () => {
     const next = prompt('Edit wine name:', b.dataset.name);

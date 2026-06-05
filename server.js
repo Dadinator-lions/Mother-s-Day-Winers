@@ -119,6 +119,11 @@ app.post('/api/wines', (req, res) => {
   }
 });
 
+app.delete('/api/wines/:id', (req, res) => {
+  db.prepare('DELETE FROM wines WHERE id = ?').run(req.params.id);
+  res.json({ ok: true });
+});
+
 app.patch('/api/wines/:id', (req, res) => {
   const { name, category } = req.body || {};
   const trimmed = (name || '').trim();
