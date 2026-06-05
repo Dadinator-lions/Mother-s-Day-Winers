@@ -133,6 +133,127 @@ ul.simple-list li {
 ul.simple-list li:last-child { border-bottom: 0; }
 .small { font-size: 0.85rem; color: var(--muted); }
 
+/* Leaderboard */
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  background: #f0e0db;
+  padding: 0.25rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+.tab {
+  flex: 1;
+  background: transparent;
+  color: var(--ink);
+  padding: 0.55rem 1rem;
+  border-radius: 7px;
+  border: 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tab.active { background: var(--accent); color: #fff; }
+.event-picker { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.event-picker select { flex: 1 1 200px; min-width: 0; }
+
+.podium {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 0.5rem;
+  align-items: end;
+  margin: 1rem 0 1.5rem;
+}
+.podium .spot {
+  background: #fff;
+  border-radius: 10px;
+  padding: 0.9rem 0.6rem;
+  text-align: center;
+  border: 1px solid var(--border);
+  position: relative;
+}
+.podium .spot.gold   { background: linear-gradient(180deg, #fff5d9, #f8e4a6); border-color: #d9b860; min-height: 170px; }
+.podium .spot.silver { background: linear-gradient(180deg, #f3f3f3, #d8d8d8); border-color: #b9b9b9; min-height: 140px; }
+.podium .spot.bronze { background: linear-gradient(180deg, #fbe5d1, #e3b894); border-color: #c39271; min-height: 130px; }
+.podium .medal { font-size: 1.6rem; }
+.podium .wine-name { font-weight: 700; margin: 0.35rem 0 0.25rem; line-height: 1.2; word-wrap: break-word; }
+.podium .score { font-size: 1.4rem; font-weight: 800; color: var(--accent-2); }
+.podium .score-sub { font-size: 0.75rem; color: var(--muted); }
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.25rem 0 0.6rem;
+  color: var(--accent-2);
+}
+.section-heading h3 { margin: 0; }
+.section-heading .pill {
+  font-size: 0.7rem;
+  background: var(--accent);
+  color: #fff;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wine-card {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.7rem 0.9rem;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 0.5rem;
+}
+.wine-card .rank-num {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+}
+.wine-card .wname { font-weight: 600; }
+.wine-card .breakdown {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+  flex-wrap: wrap;
+}
+.wine-card .breakdown span strong { color: var(--ink); }
+.wine-card .total {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--accent-2);
+  text-align: right;
+  min-width: 60px;
+}
+.wine-card .total small { display: block; font-size: 0.65rem; color: var(--muted); font-weight: 500; }
+.wine-card .bar {
+  grid-column: 2 / 4;
+  height: 6px;
+  background: #f0e0db;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 0.4rem;
+}
+.wine-card .bar > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  border-radius: 4px;
+}
+.wine-card.no-votes .total { color: var(--muted); }
+.wine-card.no-votes .bar > span { display: none; }
+
+@media (max-width: 500px) {
+  .podium { grid-template-columns: 1fr; }
+  .podium .spot { min-height: 0 !important; }
+}
+
 /* Setup wizard */
 .setup-cta {
   display: block;

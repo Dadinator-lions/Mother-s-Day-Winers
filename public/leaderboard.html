@@ -19,22 +19,29 @@
 </header>
 
 <main class="container">
-  <div class="card">
-    <h2>This Event</h2>
-    <div class="row">
-      <label>Event:
-        <select id="event-select"></select>
-      </label>
-      <button id="refresh" class="ghost">Refresh</button>
-      <span class="small" id="status"></span>
-    </div>
-    <div id="leaderboard"></div>
-  </div>
 
   <div class="card">
-    <h2>All-Time (across every year)</h2>
-    <div id="history"></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="event">This Event</button>
+      <button class="tab" data-tab="all">All Years</button>
+    </div>
+
+    <div data-tab-body="event">
+      <div class="event-picker">
+        <label for="event-select">Event:</label>
+        <select id="event-select"></select>
+        <button id="refresh" class="ghost">↻</button>
+      </div>
+      <p class="small" id="status"></p>
+      <div id="event-results"></div>
+    </div>
+
+    <div data-tab-body="all" style="display:none;">
+      <p class="small">Average scores across every Mother's Day, top to bottom.</p>
+      <div id="history-results"></div>
+    </div>
   </div>
+
 </main>
 
 <script>
@@ -46,65 +53,118 @@ $('#logout').addEventListener('click', async (e) => {
 });
 
 const eventSel = $('#event-select');
-const lbDiv = $('#leaderboard');
-const histDiv = $('#history');
+const eventDiv = $('#event-results');
+const histDiv = $('#history-results');
 const status = $('#status');
 let refreshTimer = null;
 
-function renderTable(rows, includeEvents) {
-  if (!rows.length) return '<p class="small">No data yet.</p>';
-  const head = `
-    <tr>
-      <th>Rank</th><th>Wine</th><th>Category</th>
-      ${includeEvents ? '<th class="num">Years</th>' : ''}
-      <th class="num">Votes</th>
-      <th class="num">Avg Name</th>
-      <th class="num">Avg Label</th>
-      <th class="num">Avg Taste</th>
-      <th class="num">Avg Total /15</th>
-    </tr>`;
-  const body = rows.map((r, i) => `
-    <tr class="${r.category === 'white_rose' ? 'rose' : ''}">
-      <td>${i + 1}</td>
-      <td>${r.name}</td>
-      <td>${r.category === 'white_rose' ? 'White/Rosé' : 'Red'}</td>
-      ${includeEvents ? `<td class="num">${r.events_count || 0}</td>` : ''}
-      <td class="num">${r.votes || 0}</td>
-      <td class="num">${r.avg_name ?? '—'}</td>
-      <td class="num">${r.avg_label ?? '—'}</td>
-      <td class="num">${r.avg_taste ?? '—'}</td>
-      <td class="num"><strong>${r.avg_total ?? '—'}</strong></td>
-    </tr>`).join('');
-  return `<table>${head}${body}</table>`;
+// ---- tabs ----
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
+  document.querySelectorAll('[data-tab-body]').forEach(b => {
+    b.style.display = b.dataset.tabBody === t.dataset.tab ? '' : 'none';
+  });
+}));
+
+// ---- rendering ----
+
+function podium(rows) {
+  // Highest three with at least 1 vote.
+  const scored = rows.filter(r => r.votes > 0).slice(0, 3);
+  if (scored.length === 0) return '';
+  const [first, second, third] = scored;
+  const spot = (r, kind, medal) => r ? `
+    <div class="spot ${kind}">
+      <div class="medal">${medal}</div>
+      <div class="wine-name">${r.name}</div>
+      <div class="score">${r.avg_total}</div>
+      <div class="score-sub">of 15 · ${r.votes} vote${r.votes === 1 ? '' : 's'}</div>
+    </div>` : `<div class="spot ${kind}" style="visibility:hidden;"></div>`;
+  // Visual: silver | gold | bronze
+  return `<div class="podium">
+    ${spot(second, 'silver', '🥈')}
+    ${spot(first,  'gold',   '🥇')}
+    ${spot(third,  'bronze', '🥉')}
+  </div>`;
 }
+
+function wineCard(r, i) {
+  const noVotes = !r.votes;
+  const pct = r.avg_total ? Math.min(100, (r.avg_total / 15) * 100) : 0;
+  return `
+    <div class="wine-card ${noVotes ? 'no-votes' : ''}">
+      <div class="rank-num">${i + 1}</div>
+      <div>
+        <div class="wname">${r.name}</div>
+        <div class="breakdown">
+          <span>Name <strong>${r.avg_name ?? '—'}</strong></span>
+          <span>Label <strong>${r.avg_label ?? '—'}</strong></span>
+          <span>Taste <strong>${r.avg_taste ?? '—'}</strong></span>
+          <span>${r.votes || 0} vote${r.votes === 1 ? '' : 's'}${r.events_count ? ` · ${r.events_count} year${r.events_count === 1 ? '' : 's'}` : ''}</span>
+        </div>
+      </div>
+      <div class="total">${r.avg_total ?? '—'}<small>of 15</small></div>
+      <div class="bar"><span style="width:${pct}%"></span></div>
+    </div>`;
+}
+
+function renderSection(title, kind, rows) {
+  if (!rows.length) return '';
+  return `
+    <div class="section-heading">
+      <h3>${title}</h3>
+      <span class="pill">${kind === 'white_rose' ? 'White / Rosé' : 'Red'}</span>
+    </div>
+    ${podium(rows)}
+    ${rows.map((r, i) => wineCard(r, i)).join('')}`;
+}
+
+function renderResults(target, rows) {
+  if (!rows.length) {
+    target.innerHTML = '<p class="small">No data yet. Ranks appear as votes come in.</p>';
+    return;
+  }
+  const whites = rows.filter(r => r.category === 'white_rose');
+  const reds   = rows.filter(r => r.category === 'red');
+  target.innerHTML =
+    renderSection('Whites & Rosés', 'white_rose', whites) +
+    renderSection('Reds', 'red', reds);
+}
+
+// ---- data ----
 
 async function loadEvents() {
   const events = await (await fetch('/api/events')).json();
-  eventSel.innerHTML = events.length
-    ? events.map(e => `<option value="${e.id}">${fmtDate(e.event_date)}</option>`).join('')
-    : '<option value="">No events yet</option>';
-  if (events.length) await loadLeaderboard();
+  if (!events.length) {
+    eventSel.innerHTML = '<option value="">No events yet</option>';
+    eventDiv.innerHTML = '<p class="small">Create an event in Admin to start collecting scores.</p>';
+    return;
+  }
+  eventSel.innerHTML = events.map(e => `<option value="${e.id}">${fmtDate(e.event_date)}</option>`).join('');
+  const remembered = localStorage.getItem('mdw_event_id');
+  if (remembered && events.find(e => String(e.id) === remembered)) eventSel.value = remembered;
+  await loadEvent();
 }
 
-async function loadLeaderboard() {
-  if (!eventSel.value) { lbDiv.innerHTML = ''; return; }
+async function loadEvent() {
+  if (!eventSel.value) { eventDiv.innerHTML = ''; return; }
   const rows = await (await fetch(`/api/events/${eventSel.value}/leaderboard`)).json();
-  lbDiv.innerHTML = renderTable(rows, false);
-  status.textContent = 'Updated ' + new Date().toLocaleTimeString();
+  renderResults(eventDiv, rows);
+  status.textContent = 'Live · last updated ' + new Date().toLocaleTimeString();
 }
 
 async function loadHistory() {
   const rows = await (await fetch('/api/history/wines')).json();
-  histDiv.innerHTML = renderTable(rows, true);
+  renderResults(histDiv, rows);
 }
 
-eventSel.addEventListener('change', loadLeaderboard);
-$('#refresh').addEventListener('click', () => { loadLeaderboard(); loadHistory(); });
+eventSel.addEventListener('change', loadEvent);
+$('#refresh').addEventListener('click', () => { loadEvent(); loadHistory(); });
 
 (async () => {
   await loadEvents();
   await loadHistory();
-  refreshTimer = setInterval(loadLeaderboard, 10000);
+  refreshTimer = setInterval(loadEvent, 10000);
 })();
 </script>
 </body>
