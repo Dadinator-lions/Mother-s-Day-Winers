@@ -267,6 +267,11 @@ app.post('/api/events/:id/participants', (req, res) => {
   res.json(tx());
 });
 
+app.delete('/api/participants/:id', (req, res) => {
+  db.prepare('DELETE FROM participants WHERE id = ?').run(req.params.id);
+  res.json({ ok: true });
+});
+
 app.patch('/api/participants/:id', (req, res) => {
   const { name } = req.body || {};
   const trimmed = (name || '').trim();
