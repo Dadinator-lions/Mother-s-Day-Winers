@@ -55,7 +55,7 @@ async function loadEvents() {
   const events = await (await fetch('/api/events')).json();
   eventSel.innerHTML = '<option value="">— select event —</option>' +
     events.map(e => `<option value="${e.id}">${fmtDate(e.event_date)}</option>`).join('');
-  if (events.length) { eventSel.value = events[0].id; await loadParticipants(); }
+  if (events.length) { eventSel.value = events[0].id; await loadWines(); await loadParticipants(); }
 }
 
 async function loadParticipants() {
@@ -66,7 +66,8 @@ async function loadParticipants() {
 }
 
 async function loadWines() {
-  wines = await (await fetch('/api/wines')).json();
+  if (!eventSel.value) { wines = []; return; }
+  wines = await (await fetch(`/api/events/${eventSel.value}/wines`)).json();
 }
 
 async function loadMyRankings() {
@@ -136,10 +137,10 @@ async function onStar(e) {
   }
 }
 
-eventSel.addEventListener('change', async () => { await loadParticipants(); await loadMyRankings(); });
+eventSel.addEventListener('change', async () => { await loadWines(); await loadParticipants(); await loadMyRankings(); });
 partSel.addEventListener('change', loadMyRankings);
 
-(async () => { await loadWines(); await loadEvents(); await loadMyRankings(); })();
+(async () => { await loadEvents(); await loadWines(); await loadMyRankings(); })();
 </script>
 </body>
 </html>

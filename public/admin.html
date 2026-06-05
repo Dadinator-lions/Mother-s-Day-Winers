@@ -42,6 +42,21 @@
     </form>
     <ul id="participant-list" class="simple-list"></ul>
   </div>
+
+  <div class="card">
+    <h2>Wines for event</h2>
+    <p class="small">Uncheck a wine to exclude it from this event. Wines apply per event; past events keep their lineup.</p>
+    <div id="wine-list"></div>
+    <h3 style="margin-top:1.25rem;">Add a new wine to the master list</h3>
+    <form id="wine-form" class="row">
+      <input type="text" id="wine-name" placeholder="Wine name" required />
+      <select id="wine-category" required>
+        <option value="white_rose">White / Rosé</option>
+        <option value="red">Red</option>
+      </select>
+      <button type="submit">Add wine</button>
+    </form>
+  </div>
 </main>
 
 <script>
@@ -137,9 +152,75 @@ $('#participant-form').addEventListener('submit', async (e) => {
   await loadParticipants();
 });
 
-eventSel.addEventListener('change', loadParticipants);
+const wineList = document.getElementById('wine-list');
 
-loadEvents();
+async function loadWines() {
+  wineList.innerHTML = '';
+  if (!eventSel.value) return;
+  const wines = await (await fetch(`/api/events/${eventSel.value}/wines/all`)).json();
+  const groups = { white_rose: [], red: [] };
+  for (const w of wines) groups[w.category].push(w);
+  const section = (title, list) => `
+    <h3>${title}</h3>
+    <ul class="simple-list">
+      ${list.map(w => `
+        <li data-id="${w.id}">
+          <label style="display:flex; gap:0.5rem; align-items:center; flex:1;">
+            <input type="checkbox" class="wine-toggle" data-id="${w.id}" ${w.included ? 'checked' : ''} />
+            <span class="w-name">${w.name}</span>
+          </label>
+          <span>
+            <button class="ghost edit-w" data-id="${w.id}" data-name="${w.name.replace(/"/g, '&quot;')}" data-category="${w.category}">Edit</button>
+          </span>
+        </li>`).join('')}
+    </ul>`;
+  wineList.innerHTML = section('Whites & Rosés', groups.white_rose) + section('Reds', groups.red);
+  wineList.querySelectorAll('.wine-toggle').forEach(cb => cb.addEventListener('change', async () => {
+    const url = `/api/events/${eventSel.value}/wines/${cb.dataset.id}`;
+    await fetch(url, { method: cb.checked ? 'POST' : 'DELETE' });
+  }));
+  wineList.querySelectorAll('.edit-w').forEach(b => b.addEventListener('click', async () => {
+    const next = prompt('Edit wine name:', b.dataset.name);
+    if (next == null) return;
+    const trimmed = next.trim();
+    if (!trimmed) return;
+    const res = await fetch(`/api/wines/${b.dataset.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: trimmed, category: b.dataset.category }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Could not rename.');
+      return;
+    }
+    await loadWines();
+  }));
+}
+
+document.getElementById('wine-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('wine-name').value.trim();
+  const category = document.getElementById('wine-category').value;
+  if (!name) return;
+  const res = await fetch('/api/wines', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, category }),
+  });
+  if (!res.ok) { alert('Could not add wine.'); return; }
+  // Include the new wine in the current event
+  if (eventSel.value) {
+    const wine = await res.json();
+    await fetch(`/api/events/${eventSel.value}/wines/${wine.id}`, { method: 'POST' });
+  }
+  document.getElementById('wine-name').value = '';
+  await loadWines();
+});
+
+eventSel.addEventListener('change', async () => { await loadParticipants(); await loadWines(); });
+
+(async () => { await loadEvents(); await loadWines(); })();
 </script>
 </body>
 </html>

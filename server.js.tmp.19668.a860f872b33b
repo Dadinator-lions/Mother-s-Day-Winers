@@ -291,7 +291,6 @@ app.post('/api/events/:id/rankings/:participantId', (req, res) => {
 });
 
 app.get('/api/events/:id/leaderboard', (req, res) => {
-  ensureEventWines(req.params.id);
   const rows = db.prepare(`
     SELECT w.id, w.name, w.category,
       COUNT(r.id) AS votes,
