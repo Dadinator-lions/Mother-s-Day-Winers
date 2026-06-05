@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Leaderboard · Mother's Day Winers</title>
 <link rel="stylesheet" href="/style.css" />
+<script src="/util.js"></script>
 </head>
 <body>
 <header class="app-header">
@@ -79,7 +80,7 @@ function renderTable(rows, includeEvents) {
 async function loadEvents() {
   const events = await (await fetch('/api/events')).json();
   eventSel.innerHTML = events.length
-    ? events.map(e => `<option value="${e.id}">${e.event_date}</option>`).join('')
+    ? events.map(e => `<option value="${e.id}">${fmtDate(e.event_date)}</option>`).join('')
     : '<option value="">No events yet</option>';
   if (events.length) await loadLeaderboard();
 }

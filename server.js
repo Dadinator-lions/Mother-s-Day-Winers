@@ -150,6 +150,19 @@ app.post('/api/events/:id/participants', (req, res) => {
   res.json(tx());
 });
 
+app.patch('/api/participants/:id', (req, res) => {
+  const { name } = req.body || {};
+  const trimmed = (name || '').trim();
+  if (!trimmed) return res.status(400).json({ error: 'name required' });
+  try {
+    db.prepare('UPDATE participants SET name = ? WHERE id = ?').run(trimmed, req.params.id);
+    res.json({ id: +req.params.id, name: trimmed });
+  } catch (e) {
+    if (String(e).includes('UNIQUE')) return res.status(409).json({ error: 'name already exists' });
+    res.status(500).json({ error: String(e) });
+  }
+});
+
 app.delete('/api/events/:eventId/participants/:participantId', (req, res) => {
   db.prepare('DELETE FROM event_participants WHERE event_id = ? AND participant_id = ?')
     .run(req.params.eventId, req.params.participantId);
