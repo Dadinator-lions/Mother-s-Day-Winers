@@ -222,5 +222,7 @@ app.get('/api/history/wines', (_req, res) => {
 });
 
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/admin', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/leaderboard', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'leaderboard.html')));
 
 app.listen(PORT, () => console.log(`Mother's Day Winers listening on ${PORT} (db: ${DB_PATH})`));
