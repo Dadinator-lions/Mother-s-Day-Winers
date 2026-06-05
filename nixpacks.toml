@@ -1,0 +1,4 @@
+providers = ["node"]
+
+[phases.install]
+cmds = ["NPM_CONFIG_PRODUCTION= npm ci --omit=dev"]
