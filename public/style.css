@@ -130,3 +130,95 @@ ul.simple-list li {
 }
 ul.simple-list li:last-child { border-bottom: 0; }
 .small { font-size: 0.85rem; color: var(--muted); }
+
+/* Setup wizard */
+.setup-cta {
+  display: block;
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  border: 0;
+  padding: 1.1rem 1.5rem;
+  border-radius: 12px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  margin-bottom: 1.25rem;
+  letter-spacing: 0.02em;
+}
+.setup-cta:hover { transform: translateY(-1px); }
+.wizard-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem;
+  z-index: 100;
+  overflow-y: auto;
+}
+.wizard-backdrop.open { display: flex; }
+.wizard {
+  background: var(--card);
+  color: var(--ink);
+  max-width: 640px;
+  width: 100%;
+  border-radius: 14px;
+  padding: 1.5rem 1.75rem 1.25rem;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+}
+.wizard h2 { margin-top: 0; color: var(--accent-2); }
+.wizard-steps {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.wizard-step-dot {
+  flex: 1;
+  text-align: center;
+  padding: 0.35rem 0;
+  border-radius: 6px;
+  background: #f0e0db;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.wizard-step-dot.active { background: var(--accent); color: #fff; }
+.wizard-step-dot.done { background: var(--gold); color: #4a2f10; }
+.wizard-body { min-height: 260px; }
+.wizard-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.25rem;
+  gap: 0.5rem;
+}
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.35rem 1rem;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+.checkbox-grid label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.2rem;
+}
+.inline-add {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.inline-add input, .inline-add select { flex: 1; min-width: 120px; }
+.section-label {
+  font-weight: 600;
+  margin: 1rem 0 0.4rem;
+  color: var(--accent-2);
+}
